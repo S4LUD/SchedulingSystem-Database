@@ -307,7 +307,7 @@ router.get("/search-by-course/:course", AuthToken, async (req, res) => {
   }
 });
 
-router.get("/searchbysection/:section", AuthToken, async (req, res) => {
+router.get("/searchbysection/:section", async (req, res) => {
   try {
     const data = await AuthSectionScheme.find({
       section: req.params.section,
