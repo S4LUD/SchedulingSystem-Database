@@ -1,6 +1,8 @@
 const mongoose = require("mongoose");
 
 const AuthScheduleScheme = new mongoose.Schema({
+  dayIndex: { type: Number, required: true },
+  timeslotIndex: { type: Number, required: true },
   course: { type: String, required: true },
   section: { type: String, required: true },
   room: { type: String, required: true },

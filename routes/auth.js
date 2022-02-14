@@ -25,31 +25,31 @@ const AuthYearScheme = require("../models/AuthYearScheme");
 dotenv.config();
 
 // Register user
-// router.post("/register", async (req, res) => {
-//   const { error } = regScheme(req.body);
-//   if (error)
-//     return res.status(400).send({ error: error["details"][0]["message"] });
+router.post("/register", async (req, res) => {
+  const { error } = regScheme(req.body);
+  if (error)
+    return res.status(400).send({ error: error["details"][0]["message"] });
 
-//   const usernameExist = await AuthScheme.findOne({
-//     username: req.body.username,
-//   });
-//   if (usernameExist) return res.status(400).send({ message: true });
+  const usernameExist = await AuthScheme.findOne({
+    username: req.body.username,
+  });
+  if (usernameExist) return res.status(400).send({ message: true });
 
-//   const salt = await bcrypt.genSalt(10);
-//   const hashedPassword = await bcrypt.hash(req.body.password, salt);
+  const salt = await bcrypt.genSalt(10);
+  const hashedPassword = await bcrypt.hash(req.body.password, salt);
 
-//   const data = new AuthScheme({
-//     username: req.body.username,
-//     password: hashedPassword,
-//   });
+  const data = new AuthScheme({
+    username: req.body.username,
+    password: hashedPassword,
+  });
 
-//   try {
-//     const UReg = await data.save();
-//     if (UReg) return res.send({ message: "OK" });
-//   } catch (err) {
-//     res.status(400).send({ message: err["message"] });
-//   }
-// });
+  try {
+    const UReg = await data.save();
+    if (UReg) return res.send({ message: "OK" });
+  } catch (err) {
+    res.status(400).send({ message: err["message"] });
+  }
+});
 
 // Login user
 router.post("/login", async (req, res) => {
@@ -121,6 +121,7 @@ router.post("/schedule", AuthToken, async (req, res) => {
     });
 
   const CheckTimeslot = await AuthScheduleScheme.findOne({
+    section: req.body.section,
     timeslot: req.body.timeslot,
     day: req.body.day,
   });
@@ -128,10 +129,12 @@ router.post("/schedule", AuthToken, async (req, res) => {
   if (CheckTimeslot)
     return res.status(400).send({
       message: `Timeslot ${req.body.timeslot} is not "Available".`,
-      description: `Timeslot. ${req.body.timeslot} is already scheduled for ${CheckTimeslot.instructor} at ${req.body.day} ${req.body.timeslot}.`,
+      description: `Timeslot. ${req.body.timeslot} is already scheduled for ${CheckTimeslot.instructor} at room ${CheckTimeslot.room}.`,
     });
 
   const data = new AuthScheduleScheme({
+    dayIndex: req.body.dayIndex,
+    timeslotIndex: req.body.timeslotIndex,
     course: req.body.course,
     section: req.body.section,
     room: req.body.room,
@@ -153,7 +156,7 @@ router.get("/search-by-section/:section", async (req, res) => {
   try {
     const data = await AuthScheduleScheme.find({
       section: req.params.section,
-    });
+    }).sort({ dayIndex: 1, timeslotIndex: 1 });
     if (data) return res.send(data);
   } catch (err) {
     res.status(400).send(err);
@@ -180,23 +183,23 @@ router.get("/semester", async (req, res) => {
   }
 });
 
-// router.post("/semester", AuthToken, async (req, res) => {
-//   try {
-//     const data = new AuthSemesterScheme({
-//       semester: req.body.semester,
-//       year: req.body.year,
-//     });
+router.post("/semester", AuthToken, async (req, res) => {
+  try {
+    const data = new AuthSemesterScheme({
+      semester: req.body.semester,
+      year: req.body.year,
+    });
 
-//     try {
-//       const setSchedule = await data.save();
-//       if (setSchedule) return res.send({ message: "OK" });
-//     } catch (err) {
-//       res.status(400).send({ message: err["message"] });
-//     }
-//   } catch (err) {
-//     res.status(400).send(err);
-//   }
-// });
+    try {
+      const setSchedule = await data.save();
+      if (setSchedule) return res.send({ message: "OK" });
+    } catch (err) {
+      res.status(400).send({ message: err["message"] });
+    }
+  } catch (err) {
+    res.status(400).send(err);
+  }
+});
 
 router.patch("/semester", AuthToken, async (req, res) => {
   try {
@@ -320,6 +323,11 @@ router.post("/section", AuthToken, async (req, res) => {
   if (error)
     return res.status(400).send({ error: error["details"][0]["message"] });
 
+  const CheckSection = await AuthSectionScheme.findOne({
+    section: req.body.section,
+  });
+  if (CheckSection) return res.status(400).send({ message: "Section found" });
+
   const data = new AuthSectionScheme({
     section: req.body.section,
     course: req.body.course,
@@ -382,7 +390,21 @@ router.post("/subject", AuthToken, async (req, res) => {
   if (error)
     return res.status(400).send({ error: error["details"][0]["message"] });
 
+  const CheckSubject = await AuthSubjectScheme.findOne({
+    subject: req.body.subject,
+  });
+
+  if (CheckSubject) return res.status(400).send({ message: "Subject found" });
+
+  const CheckSCode = await AuthSubjectScheme.findOne({
+    s_code: req.body.s_code,
+  });
+
+  if (CheckSCode)
+    return res.status(400).send({ message: "Subject Code found" });
+
   const data = new AuthSubjectScheme({
+    s_code: req.body.s_code,
     subject: req.body.subject,
   });
 
@@ -439,6 +461,12 @@ router.post("/instructor", AuthToken, async (req, res) => {
   if (error)
     return res.status(400).send({ error: error["details"][0]["message"] });
 
+  const CheckInstructor = await AuthInstructorScheme.findOne({
+    instructor: req.body.instructor,
+  });
+  if (CheckInstructor)
+    return res.status(400).send({ message: "Instructor found" });
+
   const data = new AuthInstructorScheme({
     instructor: req.body.instructor,
   });
@@ -454,6 +482,17 @@ router.post("/instructor", AuthToken, async (req, res) => {
 router.get("/instructor", async (req, res) => {
   try {
     const data = await AuthInstructorScheme.find();
+    if (data) return res.send(data);
+  } catch (err) {
+    res.status(400).send(err);
+  }
+});
+
+router.get("/instructor/:data", async (req, res) => {
+  try {
+    const data = await AuthInstructorScheme.find({
+      instructor: req.params.data,
+    });
     if (data) return res.send(data);
   } catch (err) {
     res.status(400).send(err);
@@ -496,6 +535,36 @@ router.get("/verify", async (req, res) => {
   try {
     const verified = jwt.verify(token, process.env.TOKEN_SECRET);
     res.send(verified);
+  } catch (error) {
+    res.status(400).send({ message: false });
+  }
+});
+
+router.patch("/verify", AuthToken, async (req, res) => {
+  const token = req.header("auth-token");
+
+  const verified = jwt.verify(token, process.env.TOKEN_SECRET);
+
+  if (!verified) return res.send({ message: false });
+
+  try {
+    if (req.body.username) {
+      const Username = await AuthScheme.updateOne(
+        { _id: verified._id },
+        { $set: { username: req.body.username } }
+      );
+      return res.send(Username);
+    }
+
+    if (req.body.password) {
+      const salt = await bcrypt.genSalt(10);
+      const hashedPassword = await bcrypt.hash(req.body.password, salt);
+      const Password = await AuthScheme.updateOne(
+        { _id: verified._id },
+        { $set: { password: hashedPassword } }
+      );
+      return res.send(Password);
+    }
   } catch (error) {
     res.status(400).send({ message: false });
   }

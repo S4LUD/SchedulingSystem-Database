@@ -18,6 +18,8 @@ const logScheme = (data) => {
 
 const scheduleScheme = (data) => {
   const schemaLog = Joi.object({
+    dayIndex: Joi.number().required(),
+    timeslotIndex: Joi.number().required(),
     course: Joi.string().required(),
     section: Joi.string().required(),
     room: Joi.string().required(),
@@ -47,6 +49,7 @@ const sectionScheme = (data) => {
 
 const subjectScheme = (data) => {
   const schemaLog = Joi.object({
+    s_code: Joi.string().required(),
     subject: Joi.string().required(),
   });
   return schemaLog.validate(data);
